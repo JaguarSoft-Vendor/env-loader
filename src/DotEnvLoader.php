@@ -2,6 +2,8 @@
 namespace JaguarSoft\LaravelEnvLoader;
 
 use Dotenv\Loader;
+use Dotenv\Parser;
+use DotEnvParser;
 use Illuminate\Support\Str;
 
 
@@ -9,7 +11,7 @@ class DotEnvLoader extends Loader {
 
 	public function normaliseVariable($name, $value = null)
     {
-        list($name, $value) = $this->normaliseEnvironmentVariable($name, $value);
+        list($name, $value) = Parser::parse("$name=$value");            
         return $this->env($value);
     }
 
@@ -29,61 +31,13 @@ class DotEnvLoader extends Loader {
             case '(null)':
                 return;
         }
-        if (strlen($value) > 1 && Str::startsWith($value, '"') && Str::endsWith($value, '"')) {
-            return substr($value, 1, -1);
+        if (preg_match('/\A([\'"])(.*)\1\z/', $value, $matches)) {
+            return $matches[2];
         }
         return $value;
     }
 
-    public function readVariables()
-    {        
-        $this->ensureFileIsReadable();
-        $_envs = [];
-        $filePath = $this->filePath;
-        $lines = $this->readLinesFromFile($filePath);
-        foreach ($lines as $line) {
-            if (!$this->isComment($line) && $this->looksLikeSetter($line)) {                
-                list($name, $value) = $this->normaliseEnvironmentVariable($line, null);
-                $_envs[$name] = $value;
-            }
-        }
-        return $_envs;
-    }
-
-    public function readLines()
-    {
-        $this->ensureFileIsReadable();        
-        $filePath = $this->filePath;
-        //$lines = $this->readLinesFromFile($filePath);
-        $autodetect = ini_get('auto_detect_line_endings');
-        ini_set('auto_detect_line_endings', '1');
-        $lines = file($filePath, FILE_IGNORE_NEW_LINES);
-        $env_line = [];
-        ini_set('auto_detect_line_endings', $autodetect);
-        foreach ($lines as $k => $line) {
-            if(empty($line)) continue;
-            if($this->isComment($line)) continue;
-            list($name, $value) = $this->normaliseEnvironmentVariable($line, null);
-            $env_line[$name] = $k;
-        }
-
-        return $env_line;
-    }
-
-    public function setEnvironmentVariable($name, $value = null)
-    {
-        // If PHP is running as an Apache module and an existing
-        // Apache environment variable exists, overwrite it
-        if(is_bool($value)) { $value = $value ? 'true' : 'false'; }        
-        if (function_exists('apache_getenv') && function_exists('apache_setenv') && apache_getenv($name) !== false) {
-            apache_setenv($name, $value);
-        }
-
-        if (function_exists('putenv') && is_string($value)) {
-            putenv("$name=$value");
-        }
-
-        $_ENV[$name] = $value;
-        $_SERVER[$name] = $value;
+    public function getVariables() {
+        return $this->envVariables;
     }
 }

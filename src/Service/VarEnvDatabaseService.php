@@ -8,14 +8,14 @@ use JaguarSoft\LaravelEnvLoader\Model\Env as Model;
 use JaguarSoft\LaravelEnvLoader\Model\VarEnvBuilder;
 
 use Illuminate\Contracts\Foundation\Application;
-use Exception, Log;
-use Dotenv\Exception\InvalidFileException;
+use Dotenv\Environment\DotenvFactory;
+use Exception;
 
 class VarEnvDatabaseService implements VarEnvService {	
 	protected $loader;
 
 	function __construct(Application $app){		
-		$this->loader = new DotEnvLoader('.env');
+		$this->loader = new DotEnvLoader(['.env'], new DotenvFactory());
 	}
 
 	function listar() {
@@ -23,11 +23,7 @@ class VarEnvDatabaseService implements VarEnvService {
 		foreach(Model::get() as $Env) {
 			$VarEnv = VarEnvBuilder::build($Env);
 			if(!$VarEnv->tipo && $VarEnv->tipo == ''){
-				try {	
-					$VarEnv->valor = $this->loader->normaliseVariable($VarEnv->codigo,$VarEnv->valor);
-				} catch (InvalidFileException $e) {
-					Log::error($VarEnv->codigo .': '. $e->getMessage());
-				}
+				$VarEnv->valor = $this->loader->normaliseVariable($VarEnv->codigo,$VarEnv->valor);				
 			}
 			array_push($varenvs, $VarEnv);			
 		}
