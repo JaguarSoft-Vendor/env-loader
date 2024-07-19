@@ -19,7 +19,7 @@ class VarEnvBusiness {
 		$this->VarEnvs = $this->Service->listar();		
 	}
 
-	public function setEnvs() {
+	public function setEnvs() {		
 		$path = app()->environmentPath();
         $file = app()->environmentFile();
         if (!is_string($file)) $file = '.env';    
@@ -28,8 +28,15 @@ class VarEnvBusiness {
         $loader->load();
         $envs = $loader->getVariables();    
 		foreach($this->VarEnvs as $VarEnv) {
-			if($envs->has($VarEnv->codigo)) continue;
-			$loader->setEnvironmentVariable($VarEnv->codigo, $VarEnv->val());
+			$codigo = $VarEnv->codigo;
+			if($envs->has($codigo)) continue;
+			$val = $VarEnv->val();
+			
+			if(is_object($val)) {
+			} else if (is_array($val)) {
+			} else {
+				$loader->setEnvironmentVariable($codigo, $val);
+			}			
 		}
 	}
 
