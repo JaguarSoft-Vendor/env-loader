@@ -13,30 +13,27 @@ use Dotenv\Environment\Adapter\ServerConstAdapter;
 class VarEnvBusiness {
 	protected $Service;	
 	protected $VarEnvs = [];
+	protected $loader;
 
-	function __construct(VarEnvService $Service){
+	function __construct(VarEnvService $Service, $inmutable = false){
 		$this->Service = $Service;
-		$this->VarEnvs = $this->Service->listar();		
-	}
+		$this->VarEnvs = $this->Service->listar();	
 
-	public function setEnvs() {		
 		$path = app()->environmentPath();
         $file = app()->environmentFile();
         if (!is_string($file)) $file = '.env';    
         $filePath = rtrim($path, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$file;        
-        $loader = new DotEnvLoader([$filePath], new DotenvFactory(), true);
-        $loader->load();
-        $envs = $loader->getVariables();    
+        $this->loader = new DotEnvLoader([$filePath], new DotenvFactory([new EnvConstAdapter]), $inmutable);
+        $this->loader->load();
+	}
+
+	public function setEnvs() {
+        $envs = $this->loader->getVariables();    
 		foreach($this->VarEnvs as $VarEnv) {
 			$codigo = $VarEnv->codigo;
-			if($envs->has($codigo)) continue;
-			$val = $VarEnv->val();
-			
-			if(is_object($val)) {
-			} else if (is_array($val)) {
-			} else {
-				$loader->setEnvironmentVariable($codigo, $val);
-			}			
+			//if($envs->has($codigo)) continue;
+			$val = $VarEnv->val();			
+			$this->loader->setEnvironmentVariable($codigo, $val);			
 		}
 	}
 
@@ -68,9 +65,10 @@ class VarEnvBusiness {
 		return $default;
 	}
 
-	function getOrEnv($codigo, $default = null) {
+	function getOrEnv($codigo, $default = null) {		
 		return 	$this->has($codigo) ? $this->get($codigo) : 
-				(isset($_ENV[$codigo]) ? $this->handleEnv($_ENV[$codigo]) : env($codigo,$default));
+				($this->loader->getEnvironmentVariable($codigo) ?? env($codigo,$default));
+				//(isset($_ENV[$codigo]) ? $this->handleEnv($_ENV[$codigo]) : env($codigo,$default));
 	}
 
 	protected function handleEnv($value) {
@@ -106,4 +104,4 @@ class VarEnvBusiness {
 	function delete($codigo, $valor) {
 		$this->Service->borrar($codigo, $valor);
 	}
-}	
+}
