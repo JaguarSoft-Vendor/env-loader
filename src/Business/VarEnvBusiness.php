@@ -20,8 +20,10 @@ class VarEnvBusiness {
 	function __construct(VarEnvService $Service, $inmutable = false){
 		$this->Service = $Service;
 		$this->inmutable = $inmutable;		
-		$this->VarEnvs = $this->Service->listar();	
-
+		$this->VarEnvs = $this->Service->listar();
+		$this->varenv_arr = collect($this->VarEnvs)->mapWithKeys(function($VarEnv){
+			return [$VarEnv->codigo => $VarEnv->val()];
+		});
 		$path = app()->environmentPath();
         $file = app()->environmentFile();
         if (!is_string($file)) $file = '.env';    
@@ -31,7 +33,7 @@ class VarEnvBusiness {
 	}
 
 	public function merge(VarEnvService $Service) {
-		$VarEnvs = $Service->listar();		
+		$VarEnvs = $Service->listar();
 		foreach($VarEnvs as $VarEnv) {
 			$codigo = $VarEnv->codigo;			
 			$val = $VarEnv->val();
@@ -40,7 +42,7 @@ class VarEnvBusiness {
 				$this->varenv_arr[$codigo] = $val;
 				if(!is_array($val)) $this->loader->setEnvironmentVariable($codigo, $val);
 			}
-		}
+		}		
 		return $this;		
 	}
 
