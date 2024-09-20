@@ -13,10 +13,13 @@ use Dotenv\Environment\Adapter\ServerConstAdapter;
 class VarEnvBusiness {
 	protected $Service;	
 	protected $VarEnvs = [];
+	protected $varenv_arr = [];
 	protected $loader;
+	protected $inmutable = false;
 
 	function __construct(VarEnvService $Service, $inmutable = false){
 		$this->Service = $Service;
+		$this->inmutable = $inmutable;		
 		$this->VarEnvs = $this->Service->listar();	
 
 		$path = app()->environmentPath();
@@ -27,13 +30,27 @@ class VarEnvBusiness {
         $this->loader->load();
 	}
 
+	public function merge(VarEnvService $Service) {
+		$VarEnvs = $Service->listar();		
+		foreach($VarEnvs as $VarEnv) {
+			$codigo = $VarEnv->codigo;			
+			$val = $VarEnv->val();
+			if(!$this->inmutable || !isset($this->varenv_arr[$codigo])) {
+				array_push($this->VarEnvs, $VarEnv);
+				$this->varenv_arr[$codigo] = $val;
+				if(!is_array($val)) $this->loader->setEnvironmentVariable($codigo, $val);
+			}
+		}
+		return $this;		
+	}
+
 	public function setEnvs() {
-        $envs = $this->loader->getVariables();    
+        $envs = $this->loader->getVariables();        
 		foreach($this->VarEnvs as $VarEnv) {
-			$codigo = $VarEnv->codigo;
-			//if($envs->has($codigo)) continue;
-			$val = $VarEnv->val();			
-			$this->loader->setEnvironmentVariable($codigo, $val);			
+			$codigo = $VarEnv->codigo;			
+			$val = $VarEnv->val();
+			$this->varenv_arr[$codigo] = $val;
+			if(!is_array($val)) $this->loader->setEnvironmentVariable($codigo, $val);			
 		}
 	}
 
@@ -44,12 +61,7 @@ class VarEnvBusiness {
 	}
 
 	function has($codigo) : bool {		
-		foreach($this->VarEnvs as $VarEnv) {
-			if($VarEnv->codigo === $codigo) {
-				return true;
-			}
-		};
-		return false;
+		return isset($this->varenv_arr[$codigo]);		
 	} 
 
 	function hasOrEnv($codigo) : bool {				
@@ -57,12 +69,7 @@ class VarEnvBusiness {
 	}
 
 	function get($codigo, $default = null) {
-		foreach($this->VarEnvs as $VarEnv) {
-			if($VarEnv->codigo === $codigo) {
-				return $VarEnv->val();
-			}
-		};
-		return $default;
+		return $this->varenv_arr[$codigo] ?? $default;		
 	}
 
 	function getOrEnv($codigo, $default = null) {		

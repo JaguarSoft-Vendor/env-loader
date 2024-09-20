@@ -7,8 +7,13 @@ use JaguarSoft\LaravelEnvLoader\Contract\VarEnvService;
 class JaguarVarBusiness {
 	protected $business;
 
-	function __construct(VarEnvService $service) {
-		$this->business = new VarEnvBusiness($service);
+	function __construct(VarEnvService $service, $inmutable = false) {
+		$this->business = new VarEnvBusiness($service,$inmutable);
+	}
+
+	function merge(VarEnvService $Service) {
+		$this->business->merge($Service);
+		return $this;
 	}
 
 	function env($key, $default = null, $val = null) {		
@@ -25,8 +30,7 @@ class JaguarVarBusiness {
 	function all() {
 		$envs = [];
 		foreach($this->business->all() as $VarEnv) {
-			$envs[$VarEnv->codigo] = $VarEnv->val();
-			//$envs[$VarEnv->codigo] = $VarEnv;
+			$envs[$VarEnv->codigo] = $VarEnv->val();			
 		}
 		return $envs;
 	}
@@ -58,4 +62,4 @@ class JaguarVarBusiness {
 		return $this->env($key) === $comp ? $if : $else;
 	}
    
-}	
+}
