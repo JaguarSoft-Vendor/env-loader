@@ -29,7 +29,7 @@ class DotEnvLoader extends Loader {
 
     public function normaliseVariable($name, $value = null)
     {        
-        list($name, $value) = Parser::parse($name.'='.$value);
+        list($name, $value) = Parser::parse("$name=$value");
         return $this->env($value);
     }
 
@@ -123,6 +123,10 @@ class DotEnvLoader extends Loader {
         throw new InvalidPathException(
             sprintf('Unable to read any of the environment file(s) at [%s].', implode(', ', $filePaths))
         );
+    }
+
+    public function getVariables() {
+        return $this->envVariables;
     }
 
     /**

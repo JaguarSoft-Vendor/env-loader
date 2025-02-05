@@ -25,9 +25,8 @@ class VarEnvYamlService implements VarEnvService {
 		if(!file_exists($path)) return [];
 		$envs = [];
         try {
-            $envs = Yaml::parse(file_get_contents($path), Yaml::PARSE_CONSTANT);        
+            $envs = Yaml::parse(file_get_contents($path), Yaml::PARSE_CONSTANT) ?? [];        
         } catch (ParseException $e) {
-            //dd($e->getMessage());
         }
 		foreach($envs as $name => $value) {
 			array_push($varenvs, VarEnv::from($name,$value));
